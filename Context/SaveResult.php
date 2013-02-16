@@ -125,18 +125,18 @@ class SaveResult {
      */
     protected $_changeOrderIDToHttpStatus;
 
-     /**
-      * Construct SaveResult
-      *
-      * @param ObjectContext $context
-      * @param SaveChangesOption $saveChangesOptions
-      */
+    /**
+     * Construct SaveResult
+     *
+     * @param ObjectContext $context
+     * @param SaveChangesOption $saveChangesOptions
+     */
     public function SaveResult($context, $saveChangesOptions) {
         $this->_context = $context;
         $mergedDictionary = Dictionary::Merge($this->_context->ObjectToResource,
-                                        $this->_context->Bindings,
-                                        "State", Entitystates::Unchanged,
-                                        FALSE);
+                $this->_context->Bindings,
+                "State", Entitystates::Unchanged,
+                FALSE);
         $mergedDictionary->Sort("ChangeOrder");
         $this->_changedEntries =  $mergedDictionary->Values();
         $this->_batchBoundary = "batch_" . Guid::NewGuid();
@@ -155,14 +155,14 @@ class SaveResult {
             $entries = $this->_context->ObjectToResource->Values();
             foreach($entries as $entry) {
                 if($entry->State == EntityStates::Unchanged &&
-                   $entry->SaveStream != null) {
+                        $entry->SaveStream != null) {
                     $this->_changedEntries[] = $entry;
                 }
             }
         }
     }
 
-    /*
+    /**
      * To create and perform batch request from the changed entries list. For any
      * update operation on an entity (not binding) this function will use MERGE
      * if $replaceOnUpdateOption is false else PUT.
@@ -176,19 +176,19 @@ class SaveResult {
         if($changedEntriesCount > 0) {
             try {
                 Utility::WriteLine($this->_batchRequestBody,
-                                   "--" . $this->_batchBoundary);
+                "--" . $this->_batchBoundary);
                 Utility::WriteLine($this->_batchRequestBody,
-                                   "Content-Type: multipart/mixed; boundary=" .
-                                   $this->_changesetBoundry);
+                "Content-Type: multipart/mixed; boundary=" .
+                $this->_changesetBoundry);
                 Utility::WriteLine($this->_batchRequestBody, null);
                 for($i = 0; $i < $changedEntriesCount; $i++) {
                     Utility::WriteLine($this->_batchRequestBody,
-                                       "--" . $this->_changesetBoundry);
+                    "--" . $this->_changesetBoundry);
                     $changesetHeader = $this->CreateChangeSetHeader($i, $replaceOnUpdateOption);
                     $changesetBody =$this->CreateChangeSetBody($i);
                     if ($changesetBody != null) {
                         Utility::WriteLine($changesetHeader,
-                                           "Content-Length: " . strlen($changesetBody));
+                        "Content-Length: " . strlen($changesetBody));
                     }
                     Utility::WriteLine($changesetHeader, null);
                     $this->_batchRequestBody = $this->_batchRequestBody . $changesetHeader;
@@ -202,9 +202,9 @@ class SaveResult {
                 //logic of framework while building the batch request headers and
                 //body, so no http repsonse headers, status code will be there.
                 throw new ODataServiceException($exception->getError(),
-                                                '',
-                                                array(),
-                                                null);
+                        '',
+                        array(),
+                        null);
             }
 
             Utility::WriteLine($this->_batchRequestBody, "--" . $this->_changesetBoundry . "--");
@@ -223,12 +223,12 @@ class SaveResult {
         $credentialInHeaders = false;
         $uri = $this->_context->GetBaseUriWithSlash() . '$batch';
         $httpBatchRequest = new HttpBatchRequest($uri,
-                                                 $this->_batchBoundary,
-                                                 $this->_batchRequestBody,
-                                                 $this->_context->Credential,
-                                                 $this->_context->HttpProxy,
-                                                 $this->_context->CustomHeaders,
-                                                 $credentialInHeaders);
+                $this->_batchBoundary,
+                $this->_batchRequestBody,
+                $this->_context->Credential,
+                $this->_context->HttpProxy,
+                $this->_context->CustomHeaders,
+                $credentialInHeaders);
         try {
             //require a try-catch block to handle curl error due to curl_exec
             //failure (like failed to connect to host)and missing of changeset
@@ -239,11 +239,11 @@ class SaveResult {
             $this->_context->OnAfterResponseInternal($this->_httpBatchResponse->GetAsHttpResponse());
         }
         catch(InvalidOperation $exception) {
-           throw new ODataServiceException($exception->getError() .
-                                           $exception->getDetailedError(),
-                                           '',
-                                           array(),
-                                           null);
+            throw new ODataServiceException($exception->getError() .
+                    $exception->getDetailedError(),
+                    '',
+                    array(),
+                    null);
         }
 
         //Error check for batch Response ex:UnAuthorized
@@ -251,13 +251,13 @@ class SaveResult {
             $this->_httpResponses = $this->_httpBatchResponse->GetSubBatchHttpResponses();
         } else {
             throw new ODataServiceException($this->_httpBatchResponse->GetMessage(),
-                                            '',
-                                            $this->_httpBatchResponse->GetHeaders(),
-                                            $this->_httpBatchResponse->GetCode());
+                    '',
+                    $this->_httpBatchResponse->GetHeaders(),
+                    $this->_httpBatchResponse->GetCode());
         }
     }
 
-    /*
+    /**
      *  To
      *  a. Check any error is returned by OData service (ex: ODataService
      *     version mismatch, if user try to add a record with existing key)
@@ -278,7 +278,7 @@ class SaveResult {
             }
 
             if($relatedEnd->State == EntityStates::Modified ||
-               $relatedEnd->State == EntityStates::Added) {
+                    $relatedEnd->State == EntityStates::Added) {
                 $relatedEnd->State = EntityStates::Unchanged;
             }
         }
@@ -297,7 +297,7 @@ class SaveResult {
         }
     }
 
-    /*
+    /**
      * To check the version mismatch and throws ODataServiceException in case of
      * version mismatch.
      *
@@ -307,17 +307,17 @@ class SaveResult {
         foreach($this->_httpResponses as $httpResponse) {
             $headers = $httpResponse->getHeaders();
             if(isset($headers['Dataserviceversion']) &&
-            ((int)$headers['Dataserviceversion'] > (int)Resource::MaxDataServiceVersion)) {
+                    ((int)$headers['Dataserviceversion'] > (int)Resource::MaxDataServiceVersion)) {
                 throw new ODataServiceException(Resource::VersionMisMatch .
-                                                $headers['Dataserviceversion'],
-                                                '',
-                                                array(),
-                                                null);
+                        $headers['Dataserviceversion'],
+                        '',
+                        array(),
+                        null);
             }
         }
     }
 
-    /*
+    /**
      * To check OData service response for any error and throws ODataServiceException
      * in case of error. For example if Client try to add an entity with a key which
      * is already existing in the OData Service, then OData Service will throw
@@ -332,9 +332,9 @@ class SaveResult {
                 $headers = $httpResponse->getHeaders();
                 $content_type = isset($headers['Content-type']) ? $headers['Content-type']: "";
                 throw new ODataServiceException($httpResponse->getBody(),
-                                                $content_type,
-                                                $headers,
-                                                $httpResponse->getCode());
+                        $content_type,
+                        $headers,
+                        $httpResponse->getCode());
             }
         }
     }
@@ -347,7 +347,7 @@ class SaveResult {
     protected function LoadResourceBoxes() {
         foreach($this->_changedEntries as $changedEntry) {
             if(($changedEntry->IsResource()) &&
-               ($changedEntry->State == EntityStates::Added)) {
+                    ($changedEntry->State == EntityStates::Added)) {
                 $this->LoadResourceBox($changedEntry);
             }
         }
@@ -359,23 +359,23 @@ class SaveResult {
      * @param ResourceBox $resourceBox
      */
     protected function LoadResourceBox($resourceBox) {
-         $Content_ID = $resourceBox->ChangeOrder;
-         $str = $this->GetBodyByContentID($Content_ID, $content_type);
-         if($str == null) {
+        $Content_ID = $resourceBox->ChangeOrder;
+        $str = $this->GetBodyByContentID($Content_ID, $content_type);
+        if($str == null) {
             return;
-         }
+        }
 
         $this->_context->LoadResourceBox($str, $resourceBox, $content_type);
         $resourceBox->State = EntityStates::Unchanged;
     }
 
-     /**
-      * To retrieve http response body corrosponding to a specific content-id
-      *
-      * @param int $Content_ID
-      * @param string [out] $content_type
-      * @return string or null
-      */
+    /**
+     * To retrieve http response body corrosponding to a specific content-id
+     *
+     * @param int $Content_ID
+     * @param string [out] $content_type
+     * @return string or null
+     */
     protected function GetBodyByContentID($Content_ID, &$content_type) {
         foreach($this->_httpResponses as $httpResponse) {
             $headers = $httpResponse->getHeaders();
@@ -411,14 +411,14 @@ class SaveResult {
         return $changesetBody;
     }
 
-     /**
-      * To create changeset body for an entity in ATOMPub format.
-      *
-      * @param ResourceBox $resourceBox
-      * @param boolean $newline
-      * @return string
-      * @throws InvalidOperation, InternalError
-      */
+    /**
+     * To create changeset body for an entity in ATOMPub format.
+     *
+     * @param ResourceBox $resourceBox
+     * @param boolean $newline
+     * @return string
+     * @throws InvalidOperation, InternalError
+     */
     protected function CreateChangeSetBodyForResource($resourceBox, $newline) {
         $syndicationUpdated = false;
         if(EntityStates::Deleted == $resourceBox->State) {
@@ -426,7 +426,7 @@ class SaveResult {
         }
 
         if(EntityStates::Added != $resourceBox->State &&
-            EntityStates::Modified != $resourceBox->State) {
+                EntityStates::Modified != $resourceBox->State) {
             throw new InternalError(Resource::UnexpectdEntityState);
         }
 
@@ -469,30 +469,30 @@ class SaveResult {
 
                         $path = SyndicationItemProperty::GetSyndicationItemPathNoNS($attributes['FC_TargetPath']);
                         XMLBuilder::BuildDOMFromPath($FC_Synd_dom,
-                                                     $path,
-                                                     $propertyValue,
-                                                     '',
-                                                     '',
-                                                     false);
+                        $path,
+                        $propertyValue,
+                        '',
+                        '',
+                        false);
                     } else {
                         if(is_null($propertyValue)) {
                             $nullCFProperties[] = $propertyName;
                         }
 
                         XMLBuilder::BuildDOMFromPath($FC_NonSynd_dom,
-                                                     $attributes['FC_TargetPath'],
-                                                     $propertyValue,
-                                                     $attributes['FC_NsPrefix'],
-                                                     $attributes['FC_NsUri'],
-                                                     true);
+                        $attributes['FC_TargetPath'],
+                        $propertyValue,
+                        $attributes['FC_NsPrefix'],
+                        $attributes['FC_NsUri'],
+                        true);
                     }
                 }
             }
 
             $CF_SyndicationXML = trim(str_replace('<?xml version="1.0"?>', '',
-                                                  $FC_Synd_dom->SaveXML()));
+                    $FC_Synd_dom->SaveXML()));
             $CF_NonSyndicationXML = trim(str_replace('<?xml version="1.0"?>', '',
-                                                     $FC_NonSynd_dom->SaveXML()));
+                    $FC_NonSynd_dom->SaveXML()));
         }
 
 
@@ -500,8 +500,8 @@ class SaveResult {
             Utility::WriteLine($changesetBodyForResource, $CF_SyndicationXML);
             if(!$syndicationUpdated) {
                 Utility::WriteLine($changesetBodyForResource, '<updated>' .
-                                                              Utility::TimeInISO8601() .
-                                                              '</updated>');
+                        Utility::TimeInISO8601() .
+                        '</updated>');
             }
         } else {
             Utility::WriteLine($changesetBodyForResource, '<title />');
@@ -509,15 +509,15 @@ class SaveResult {
             Utility::WriteLine($changesetBodyForResource, '<name />');
             Utility::WriteLine($changesetBodyForResource, '</author>');
             Utility::WriteLine($changesetBodyForResource, '<updated>' .
-                                                          Utility::TimeInISO8601() .
-                                                          '</updated>');
+                    Utility::TimeInISO8601() .
+                    '</updated>');
         }
 
         if( EntityStates::Modified == $resourceBox->State) {
             $editLinkUri = $resourceBox->Identity;
             Utility::WriteLine($changesetBodyForResource, '<id>' .
-                                                          $editLinkUri .
-                                                          '</id>');
+                    $editLinkUri .
+                    '</id>');
 
             //While modifying, key properties cannot be null
             $keyPropertyNames = $type->geyKeyProperties();
@@ -526,7 +526,7 @@ class SaveResult {
                 $propertyValue = $prop->getValue($object);
                 if(empty($propertyValue) && !$this->_processingMediaLinkEntry) {
                     throw new InvalidOperation(Resource::NullValueNotAllowedForKey .
-                                               $keyPropertyName);
+                            $keyPropertyName);
                 }
             }
         } else {
@@ -535,7 +535,7 @@ class SaveResult {
 
         if(!$resourceBox->MediaLinkEntry) {
             Utility::WriteLine($changesetBodyForResource,
-                               "<content type=\"application/xml\">");
+            "<content type=\"application/xml\">");
         }
 
         Utility::WriteLine($changesetBodyForResource, '<m:properties>');
@@ -555,9 +555,9 @@ class SaveResult {
 
             $property = '';
             // determine if the property is null and should be output accordingly
-        	// for numeric types, utilize a numeric value
-            if ($propertyValue) {
-                Utility::GetPropertyType($refProperty, $notNullable);
+            // for numeric types, utilize a numeric value
+            if ($propertyValue === NULL) {
+                $edmType = Utility::GetPropertyType($refProperty, $notNullable);
                 if(!$notNullable) {
                     $property = "<d:" . $propertyName . " " . "m:null=\"true\" />";
                 } elseif (strpos($edmType, 'Edm.Decimal') === 0) {
@@ -568,12 +568,14 @@ class SaveResult {
                     $property = '<d:'.$propertyName.'>0</d:'.$propertyName.'>';
                 } elseif (strpos($edmType, 'Edm.Single') === 0) {
                     $property = '<d:'.$propertyName.'>0.0f</d:'.$propertyName.'>';
+                } elseif (strpos($edmType, 'Edm.Boolean') === 0) {
+                    $property = '<d:'.$propertyName.'>0</d:'.$propertyName.'>';
                 } else {
-/**
- * The following comment is from the original authors and remains until
- * further investigation can be made regarding proper behavior of
- * non-nullable types.
- */
+                    /**
+                     * The following comment is from the original authors and remains until
+                     * further investigation can be made regarding proper behavior of
+                     * non-nullable types.
+                     */
                     //ex: In the case of OrderID, the ID is a autonumber, so user will not
                     //specify this value, since its a nonnullable value we cant set null=true
                     //property, in this case the correct property node should be
@@ -584,18 +586,25 @@ class SaveResult {
             } else {
                 $attributes = $nonEpmProperty->getAttributes();
                 $edmType = '';
-                if (
-                    isset($attributes['EdmType']) &&
-                    $attributes['EdmType'] != 'Edm.String'
-                ) {
-                    $edmType = ' m:type="' . $attributes['EdmType'] . '"';
-                    // wrap value in CDATA tag since strings may contain XML special characters
-                	$propertyValue = "<![CDATA[" . $propertyValue . "]]>";
+                if (isset($attributes['EdmType'])) {
+                    $edmTypeAttr = $attributes['EdmType'];
+
+                    if ($edmTypeAttr == 'Edm.String') {
+                        // wrap value in CDATA tag since strings may contain XML special characters
+                        $propertyValue = "<![CDATA[" . $propertyValue . "]]>";
+                    } else if ($edmTypeAttr == 'Edm.Boolean') {
+                        $propertyValue = $propertyValue ? '1' : '0';
+                    }
+
+                    if ($edmTypeAttr != 'Edm.String') {
+                        // Edm.String is default type. We can ignore it.
+                        $edmType = ' m:type="' . $edmTypeAttr . '"';
+                    }
                 }
 
                 $property = '<d:' . $propertyName . $edmType . '>' .
-                            $propertyValue .
-                            '</d:' . $propertyName . '>';
+                        $propertyValue .
+                        '</d:' . $propertyName . '>';
             }
 
             Utility::WriteLine($changesetBodyForResource, $property);
@@ -641,21 +650,21 @@ class SaveResult {
         //Now check for complex type. If type not start with 'Edm.'
         //it can be a complex type.
         if(isset($propertyAttributes['EdmType']) &&
-            ($index = strpos($propertyAttributes['EdmType'], 'Edm.')) !== 0) {
+                ($index = strpos($propertyAttributes['EdmType'], 'Edm.')) !== 0) {
             $complexBody = '<d:' . $propertyNameCT . ' m:type="' .
-                            $propertyAttributes['EdmType'] . '">' . "\n";
+                    $propertyAttributes['EdmType'] . '">' . "\n";
             $type = ClientType::Create($propertyNameCT);
             $nonEpmProperties = $type->getRawNonEPMProperties(true);
             foreach($nonEpmProperties as $nonEpmProperty) {
                 $propertyName = $nonEpmProperty->getName();
                 $refProperty = new ReflectionProperty($object, $propertyName);
                 $propertyValue = $refProperty->getValue($object);
-                
+
                 $property = '';
                 // determine if the property is null and should be output accordingly
-            	// for numeric types, utilize a numeric value
+                // for numeric types, utilize a numeric value
                 if (!$propertyValue) {
-                    Utility::GetPropertyType($refProperty, $notNullable);
+                    $edmType = Utility::GetPropertyType($refProperty, $notNullable);
                     if(!$notNullable) {
                         $property = "<d:" . $propertyName . " " . "m:null=\"true\" />";
                     } elseif (strpos($edmType, 'Edm.Decimal') === 0) {
@@ -666,24 +675,32 @@ class SaveResult {
                         $property = '<d:'.$propertyName.'>0</d:'.$propertyName.'>';
                     } elseif (strpos($edmType, 'Edm.Single') === 0) {
                         $property = '<d:'.$propertyName.'>0.0f</d:'.$propertyName.'>';
+                    } elseif (strpos($edmType, 'Edm.Boolean') === 0) {
+                        $property = '<d:'.$propertyName.'>0</d:'.$propertyName.'>';
                     } else {
                         continue;
                     }
                 } else {
                     $attributes = $nonEpmProperty->getAttributes();
                     $edmType = '';
-                    if (
-                        isset($attributes['EdmType']) &&
-                        $attributes['EdmType'] != 'Edm.String'
-                    ) {
-                        $edmType = ' m:type="' . $attributes['EdmType'] . '"';
-                        // wrap value in CDATA tag since strings may contain XML special characters
-                    	$propertyValue = "<![CDATA[" . $propertyValue . "]]>";
+                    if (isset($attributes['EdmType'])) {
+                        $edmTypeAttr = $attributes['EdmType'];
+
+                        if ($edmTypeAttr == 'Edm.String') {
+                            // wrap value in CDATA tag since strings may contain XML special characters
+                            $propertyValue = "<![CDATA[" . $propertyValue . "]]>";
+                        } else if ($edmTypeAttr == 'Edm.Boolean') {
+                            $propertyValue = $propertyValue ? '1' : '0';
+                        }
+
+                        if ($edmTypeAttr != 'Edm.String') {
+                            // Edm.String is default type. We can ignore it.
+                            $edmType = ' m:type="' . $edmTypeAttr . '"';
+                        }
                     }
-    
                     $property = '<d:' . $propertyName . $edmType . '>' .
-                                $propertyValue .
-                                '</d:' . $propertyName . '>';
+                            $propertyValue .
+                            '</d:' . $propertyName . '>';
                 }
 
                 if(isset($property)) {
@@ -699,16 +716,16 @@ class SaveResult {
         return $complexBody;
     }
 
-     /**
-      * To create changeset body for a binding in ATOMPub format.
-      *
-      * @param RelatedEnd $binding
-      * @param boolean $newline
-      * @return string
-      */
+    /**
+     * To create changeset body for a binding in ATOMPub format.
+     *
+     * @param RelatedEnd $binding
+     * @param boolean $newline
+     * @return string
+     */
     protected function CreateChangesetBodyForBinding($binding, $newline) {
         if ((EntityStates::Added != $binding->State) &&
-            (EntityStates::Modified !=  $binding->State)) {
+                (EntityStates::Modified !=  $binding->State)) {
             return null;
         }
 
@@ -728,9 +745,9 @@ class SaveResult {
         }
 
         Utility::WriteLine($changesetBodyForBinding,
-                           "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
+        "<?xml version=\"1.0\" encoding=\"utf-8\" standalone=\"yes\"?>");
         $changesetBodyForBinding = $changesetBodyForBinding .
-                                   "<uri xmlns=\"http://schemas.microsoft.com/ado/2007/08/dataservices/metadata\">";
+        "<uri xmlns=\"http://schemas.microsoft.com/ado/2007/08/dataservices/metadata\">";
         $changesetBodyForBinding = $changesetBodyForBinding . $targetObjectUri . "</uri>";
         if($newline) {
             Utility::WriteLine($changesetBodyForBinding, null);
@@ -739,14 +756,14 @@ class SaveResult {
         return $changesetBodyForBinding;
     }
 
-     /**
-      * To creates changeset header (MIME part header) for a changeset that
-      * will become a part batchrequest.
-      *
-      * @param int $index
-      * @param boolean $replaceOnUpdateOption
-      * @return string
-      */
+    /**
+     * To creates changeset header (MIME part header) for a changeset that
+     * will become a part batchrequest.
+     *
+     * @param int $index
+     * @param boolean $replaceOnUpdateOption
+     * @return string
+     */
     public function CreateChangeSetHeader($index, $replaceOnUpdateOption) {
         $changesetHeader = null;
         $entry = $this->_changedEntries[$index];
@@ -758,64 +775,64 @@ class SaveResult {
         return $changesetHeader;
     }
 
-     /**
-      * To create changeset header for an entity in batch mode.
-      *
-      * @param Resource $resourceBox
-      * @param boolean $replaceOnUpdateOption
-      * @return string
-      */
+    /**
+     * To create changeset header for an entity in batch mode.
+     *
+     * @param Resource $resourceBox
+     * @param boolean $replaceOnUpdateOption
+     * @return string
+     */
     public function CreateChangeSetHeaderForResource($resourceBox, $replaceOnUpdateOption) {
-         $entityHttpMethod = $this->GetEntityHttpMethod($resourceBox->State,
-                                                        $replaceOnUpdateOption);
-         $changesetHeaderForResource = null;
-         $resourceUri = $resourceBox->GetResourceUri($this->_context->GetBaseUriWithSlash());
-         $this->WriteOperationRequestHeaders($changesetHeaderForResource,
-                                      $entityHttpMethod,
-                                      $resourceUri);
-         Utility::WriteLine($changesetHeaderForResource,
-                            "Content-ID: " . $resourceBox->ChangeOrder);
-         Utility::WriteLine($changesetHeaderForResource,
-                            "Accept: " . $this->_context->Accept);
-         //If user specified any header specific to this resource using
-         //SetEntityHeader then write those headers.
-         if(count($resourceBox->Headers) != 0) {
+        $entityHttpMethod = $this->GetEntityHttpMethod($resourceBox->State,
+                $replaceOnUpdateOption);
+        $changesetHeaderForResource = null;
+        $resourceUri = $resourceBox->GetResourceUri($this->_context->GetBaseUriWithSlash());
+        $this->WriteOperationRequestHeaders($changesetHeaderForResource,
+                $entityHttpMethod,
+                $resourceUri);
+        Utility::WriteLine($changesetHeaderForResource,
+        "Content-ID: " . $resourceBox->ChangeOrder);
+        Utility::WriteLine($changesetHeaderForResource,
+        "Accept: " . $this->_context->Accept);
+        //If user specified any header specific to this resource using
+        //SetEntityHeader then write those headers.
+        if(count($resourceBox->Headers) != 0) {
             foreach($resourceBox->Headers as $httpHeadrName => $httpHeaderValue) {
                 Utility::WriteLine($changesetHeaderForResource,
-                                   $httpHeadrName . ": " . $httpHeaderValue);
+                $httpHeadrName . ": " . $httpHeaderValue);
             }
-         }
+        }
 
-         //In case of PUT, DELETE or MERGE operation, if the entity supports
-         //etag then we need to write If-Match header
-         if($entityHttpMethod != HttpVerb::POST &&
-            isset($resourceBox->EntityETag)) {
+        //In case of PUT, DELETE or MERGE operation, if the entity supports
+        //etag then we need to write If-Match header
+        if($entityHttpMethod != HttpVerb::POST &&
+                isset($resourceBox->EntityETag)) {
             Utility::WriteLine($changesetHeaderForResource,
-                               "If-Match: " . $resourceBox->EntityETag);
-         }
+            "If-Match: " . $resourceBox->EntityETag);
+        }
 
-         if (EntityStates::Deleted != $resourceBox->State) {
+        if (EntityStates::Deleted != $resourceBox->State) {
             Utility::WriteLine($changesetHeaderForResource, "Content-Type: " .
-                                                            "application/atom+xml" .
-                                                            ";" .
-                                                            "type=entry");
-         }
+                    "application/atom+xml" .
+                    ";" .
+                    "type=entry");
+        }
 
-         return $changesetHeaderForResource;
+        return $changesetHeaderForResource;
     }
 
-     /**
-      * To create changeset header for binding in batch mode.
-      *
-      * @param RelatedEnd $binding
-      * @return string
-      */
+    /**
+     * To create changeset header for binding in batch mode.
+     *
+     * @param RelatedEnd $binding
+     * @return string
+     */
     protected function CreateChangesetHeaderForBinding($binding) {
         $changesetHeaderForBinding = null;
         $uri = $this->CreateRequestRelativeUri($binding);
         $sourceResourceBox = null;
         $this->_context->ObjectToResource->TryGetValue($binding->GetSourceResource(),
-                                                       $sourceResourceBox);
+                $sourceResourceBox);
         $absoluteUri = null;
         if (null != $sourceResourceBox->Identity) {
             $absoluteUri = $sourceResourceBox->GetResourceUri($this->_context->GetBaseUriWithSlash());
@@ -825,59 +842,59 @@ class SaveResult {
 
         $absoluteUri = $absoluteUri . "/" . $uri;
         $this->WriteOperationRequestHeaders($changesetHeaderForBinding,
-                                            $this->GetBindingHttpMethod($binding),
-                                            $absoluteUri);
+                $this->GetBindingHttpMethod($binding),
+                $absoluteUri);
         Utility::WriteLine($changesetHeaderForBinding,
-                           "DataServiceVersion: 1.0;NetFx");
+        "DataServiceVersion: 1.0;NetFx");
         Utility::WriteLine($changesetHeaderForBinding,
-                           "Accept: " . $this->_context->Accept);
+        "Accept: " . $this->_context->Accept);
         Utility::WriteLine($changesetHeaderForBinding,
-                           "Content-ID: " . $binding->ChangeOrder);
+        "Content-ID: " . $binding->ChangeOrder);
         if ((null != $binding->GetTargetResource())&&
-            ((EntityStates::Added == $binding->State) ||
-            (EntityStates::Modified == $binding->State))) {
-           Utility::WriteLine($changesetHeaderForBinding,
-                              "Content-Type: application/xml");
+                ((EntityStates::Added == $binding->State) ||
+                        (EntityStates::Modified == $binding->State))) {
+            Utility::WriteLine($changesetHeaderForBinding,
+            "Content-Type: application/xml");
         }
 
         return $changesetHeaderForBinding;
     }
 
-     /**
-      * To create relative URI for binding operation based on binding state.
-      *
-      * @param RelatedEnd $binding
-      * @return Uri
-      */
+    /**
+     * To create relative URI for binding operation based on binding state.
+     *
+     * @param RelatedEnd $binding
+     * @return Uri
+     */
     protected function CreateRequestRelativeUri($binding) {
         $property = new ReflectionProperty($binding->GetSourceResource(),
-                                           $binding->GetSourceProperty());
+                $binding->GetSourceProperty());
         $attributes = Utility::getAttributes($property);
         $relationShip = $this->_context->GetRelationShip($attributes["Relationship"],
-                                                         $attributes["ToRole"]);
+                $attributes["ToRole"]);
         $Iscollection = ($relationShip != "0..1" && $relationShip != "1")? true: false;
 
         if ($Iscollection && EntityStates::Added != $binding->State) {
             $targetResourceBox = null;
             $this->_context->ObjectToResource->TryGetValue($binding->GetTargetResource(),
-                                                           $targetResourceBox);
+                    $targetResourceBox);
             $editLinkUri = $this->GenerateEditLinkUri($this->_context->GetBaseUriWithSlash(),
-                                                      $targetResourceBox->GetResource(),
-                                                      true);
+                    $targetResourceBox->GetResource(),
+                    true);
             return "$" . "links/" . $editLinkUri;
         }
 
         return "$" . "links/" . $binding->GetSourceProperty();
     }
 
-     /**
-      * To create EditLink URI for an entity hold by the ResourceBox $resource.
-      *
-      * @param Uri $baseUriWithSlash
-      * @param ResourceBox $resource
-      * @param boolean $isRelative
-      * @return Uri
-      */
+    /**
+     * To create EditLink URI for an entity hold by the ResourceBox $resource.
+     *
+     * @param Uri $baseUriWithSlash
+     * @param ResourceBox $resource
+     * @param boolean $isRelative
+     * @return Uri
+     */
     protected function GenerateEditLinkUri($baseUriWithSlash, $resource, $isRelative) {
         $editLinkUri = '';
         if(!$isRelative) {
@@ -888,13 +905,13 @@ class SaveResult {
         return $editLinkUri;
     }
 
-     /**
-      * To append operation request headers to $outVal.
-      *
-      * @param string [out] $outVal
-      * @param HttpVerb $methodName
-      * @param Uri $uri
-      */
+    /**
+     * To append operation request headers to $outVal.
+     *
+     * @param string [out] $outVal
+     * @param HttpVerb $methodName
+     * @param Uri $uri
+     */
     protected function WriteOperationRequestHeaders(&$outVal, $methodName, $uri) {
         Utility::WriteLine($outVal, "Content-Type: application/http");
         Utility::WriteLine($outVal, "Content-Transfer-Encoding: binary");
@@ -902,15 +919,15 @@ class SaveResult {
         Utility::WriteLine($outVal, $methodName . " " . $uri . " " . "HTTP/1.1");
     }
 
-     /**
-      * To get HTTP Verb to be used for an entity instance based on the state of the
-      * ResourceBox object holding the entity instance.
-      *
-      * @param EntityStates $state
-      * @param boolean $replaceOnUpdateOption
-      * @return HttpVerb
-      * @throws InternalError
-      */
+    /**
+     * To get HTTP Verb to be used for an entity instance based on the state of the
+     * ResourceBox object holding the entity instance.
+     *
+     * @param EntityStates $state
+     * @param boolean $replaceOnUpdateOption
+     * @return HttpVerb
+     * @throws InternalError
+     */
     protected function GetEntityHttpMethod($state, $replaceOnUpdateOption) {
         if($state == EntityStates::Added) {
             return HttpVerb::POST;
@@ -931,19 +948,19 @@ class SaveResult {
         throw new InternalError(Resource::InvalidEntityState);
     }
 
-     /**
-      * To get HTTP Verb to be used for a binding based on the state of the
-      * RelatedEnd object holding the relationship.
-      *
-      * @param RelatedEnd $binding
-      * @return HttpVerb
-      */
+    /**
+     * To get HTTP Verb to be used for a binding based on the state of the
+     * RelatedEnd object holding the relationship.
+     *
+     * @param RelatedEnd $binding
+     * @return HttpVerb
+     */
     public function GetBindingHttpMethod($binding) {
         $property = new ReflectionProperty($binding->GetSourceResource(),
-                                           $binding->GetSourceProperty());
+                $binding->GetSourceProperty());
         $attributes = Utility::getAttributes($property);
         $relationShip = $this->_context->GetRelationShip($attributes["Relationship"],
-                                                         $attributes["ToRole"]);
+                $attributes["ToRole"]);
         //SetLink
         if($relationShip == '0..1' || $relationShip == '1') {
             //SetLink with target null
@@ -961,14 +978,14 @@ class SaveResult {
         return HttpVerb::POST;
     }
 
-     /**
-      * To perform chnage set requests in non-batch mode. For any update operation
-      * on an entity (not binding) this function will use MERGE if $replaceOnUpdateOption
-      * is false else PUT.
-      *
-      * @param boolean $replaceOnUpdateOption
-      * @return DataServiceResponse
-      */
+    /**
+     * To perform chnage set requests in non-batch mode. For any update operation
+     * on an entity (not binding) this function will use MERGE if $replaceOnUpdateOption
+     * is false else PUT.
+     *
+     * @param boolean $replaceOnUpdateOption
+     * @return DataServiceResponse
+     */
     public function NonBatchRequest($replaceOnUpdateOption) {
         $headers = array();
         $code = null;
@@ -981,19 +998,19 @@ class SaveResult {
                 $httpRequest = $this->CreateRequestHeaderForSingleChange($replaceOnUpdateOption);
 
                 if($httpRequest != null ||
-                   $this->_entryIndex < count($this->_changedEntries)) {
+                        $this->_entryIndex < count($this->_changedEntries)) {
                     $contentStream = $this->CreateRequestBodyForSingleChange($this->_entryIndex);
                     if (($contentStream != null) &&
-                        (($stream = $contentStream->getStream()) != null)) {
+                            (($stream = $contentStream->getStream()) != null)) {
                         $httpMethod = $httpRequest->getMethod();
 
                         if (($contentStream->IsKnownMemoryStream()) &&
-                            ($httpMethod == HttpVerb::POST)) {
-                           //$httpRequest->ApplyHeaders(array(HttpRequestHeader::ContentLength => strlen($stream)));
+                                ($httpMethod == HttpVerb::POST)) {
+                            //$httpRequest->ApplyHeaders(array(HttpRequestHeader::ContentLength => strlen($stream)));
                         }
 
                         if($httpMethod == HttpVerb::POST ||
-                           $httpMethod == HttpVerb::MERGE) {
+                                $httpMethod == HttpVerb::MERGE) {
                             $httpRequest->setPostBody($stream);
                         } else if($httpMethod == HttpVerb::PUT) {
                             $httpRequest->setPutBody($stream);
@@ -1019,8 +1036,8 @@ class SaveResult {
                     $httpCode = $httpResponse->getCode();
                     $this->UpdateChangeOrderIDToHttpStatus($httpCode);
                     $this->_operationResponses[] = new OperationResponse($httpResponse->getHeaders(),
-                                                                         '',
-                                                                         $httpCode);
+                            '',
+                            $httpCode);
                     $this->HandleOperationResponse($httpResponse);
                 } else {
                     $this->_completed = true;
@@ -1030,10 +1047,10 @@ class SaveResult {
             }catch(InvalidOperation $exception) {
                 $this->EndNonBatchRequest();
                 throw new ODataServiceException($exception->getError() .
-                                                $exception->getDetailedError(),
-                                                '',
-                                                $headers,
-                                                $code);
+                        $exception->getDetailedError(),
+                        '',
+                        $headers,
+                        $code);
             }
         }while(!$this->_completed);
 
@@ -1058,7 +1075,7 @@ class SaveResult {
         } else {
             $resourceBox = $this->_changedEntries[$this->_entryIndex];
             if($this->_processingMediaLinkEntryPut &&
-               $resourceBox->State == EntityStates::Unchanged) {
+                    $resourceBox->State == EntityStates::Unchanged) {
                 $this->_entryIndex++;
             }
 
@@ -1077,18 +1094,18 @@ class SaveResult {
         }
 
         if(($descriptor->State == EntityStates::Unchanged ||
-            $descriptor->State == EntityStates::Modified) &&
-            (($request = $this->CheckAndProcessMediaEntryPut($descriptor)) != null)) {
-                $this->_processingMediaLinkEntry = true;
-                $this->_processingMediaLinkEntryPut = true;
-                return $request;
+                $descriptor->State == EntityStates::Modified) &&
+                (($request = $this->CheckAndProcessMediaEntryPut($descriptor)) != null)) {
+            $this->_processingMediaLinkEntry = true;
+            $this->_processingMediaLinkEntryPut = true;
+            return $request;
         }
 
         if(($descriptor->State == EntityStates::Added) &&
-            (($request = $this->CheckAndProcessMediaEntryPost($descriptor)) != null)) {
-                $this->_processingMediaLinkEntry = true;
-                $this->_processingMediaLinkEntryPut = false;
-                return $request;
+                (($request = $this->CheckAndProcessMediaEntryPost($descriptor)) != null)) {
+            $this->_processingMediaLinkEntry = true;
+            $this->_processingMediaLinkEntryPut = false;
+            return $request;
         }
 
         return $this->CreateRequestHeaderForResource($descriptor, $replaceOnUpdateOption);
@@ -1114,22 +1131,22 @@ class SaveResult {
         }
 
         if ((EntityStates::Added != $descriptor->State) &&
-             ((EntityStates::Modified != $descriptor->State) ||
-              ($descriptor->GetTargetResource() == null))) {
+                ((EntityStates::Modified != $descriptor->State) ||
+                        ($descriptor->GetTargetResource() == null))) {
             return null;
         }
 
         return new ContentStream($this->CreateRequestBodyForBinding($descriptor), true);
     }
 
-     /**
-      * To create a HttpRequest object with required headers set for entity in
-      * the $resourceBox. This is used in non-batch mode.
-      *
-      * @param ResourceBox $resourceBox
-      * @param boolean $replaceOnUpdateOption
-      * @return HttpRequest
-      */
+    /**
+     * To create a HttpRequest object with required headers set for entity in
+     * the $resourceBox. This is used in non-batch mode.
+     *
+     * @param ResourceBox $resourceBox
+     * @param boolean $replaceOnUpdateOption
+     * @return HttpRequest
+     */
     protected function CreateRequestHeaderForResource($resourceBox, $replaceOnUpdateOption) {
 
         $entityHttpMethod = $this->GetEntityHttpMethod($resourceBox->State, $replaceOnUpdateOption);
@@ -1140,21 +1157,21 @@ class SaveResult {
         $usePostTuneling = $this->_context->UsePostTunneling;
 
         if((isset($this->_context->Credential)) &&
-           ($this->_context->Credential->getCredentialType() == CredentialType::WINDOWS) &&
-           ($entityHttpMethod == HttpVerb::PUT)) {
+                ($this->_context->Credential->getCredentialType() == CredentialType::WINDOWS) &&
+                ($entityHttpMethod == HttpVerb::PUT)) {
             $this->_context->UsePostTunneling = true;
         }
 
         $request = $this->_context->CreateRequest($resourceUri,
-                                               $entityHttpMethod,
-                                               false,
-                                               "application/atom+xml",
-                                               Resource::DataServiceVersion_1);
+                $entityHttpMethod,
+                false,
+                "application/atom+xml",
+                Resource::DataServiceVersion_1);
 
         //If user specified any header specific to this resource using SetEntityHeader
         //then set those headers
         if(count($resourceBox->Headers) != 0) {
-           $request->ApplyHeaders($resourceBox->Headers);
+            $request->ApplyHeaders($resourceBox->Headers);
         }
 
         //In the case of PUT, MERGE  or DELETE operations If the entity has
@@ -1179,11 +1196,11 @@ class SaveResult {
     protected function CreateRequestHeaderForBinding($binding) {
         $sourceResourceBox = null;
         $this->_context->ObjectToResource->TryGetValue($binding->GetSourceResource(),
-                                                       $sourceResourceBox);
+                $sourceResourceBox);
         $targetResourceBox = null;
         if($binding->GetTargetResource() != null) {
             $this->_context->ObjectToResource->TryGetValue($binding->GetTargetResource(),
-                                                           $targetResourceBox);
+                    $targetResourceBox);
         }
 
         if($sourceResourceBox->Identity == null) {
@@ -1195,30 +1212,30 @@ class SaveResult {
         }
 
         return $this->_context->CreateRequest($this->CreateRequestUri($sourceResourceBox, $binding),
-                                               $this->GetBindingHttpMethod($binding),
-                                               false,
-                                               "application/xml",
-                                               Resource::DataServiceVersion_1);
+                $this->GetBindingHttpMethod($binding),
+                false,
+                "application/xml",
+                Resource::DataServiceVersion_1);
     }
 
-     /**
-      * To create the changeset body for an entity in ATOMPub. This is used
-      * in non-batch mode.
-      *
-      * @param ResourceBox $resourceBox
-      * @return string
-      */
+    /**
+     * To create the changeset body for an entity in ATOMPub. This is used
+     * in non-batch mode.
+     *
+     * @param ResourceBox $resourceBox
+     * @return string
+     */
     protected function CreateRequestBodyForResource($resourceBox) {
         return $this->CreateChangeSetBodyForResource($resourceBox, false);
     }
 
-     /**
-      * To create the changeset body for a relationship in ATOMPub. This is used
-      * in non-batch mode.
-      *
-      * @param RelatedEnd $binding
-      * @return string
-      */
+    /**
+     * To create the changeset body for a relationship in ATOMPub. This is used
+     * in non-batch mode.
+     *
+     * @param RelatedEnd $binding
+     * @return string
+     */
     protected function CreateRequestBodyForBinding($binding) {
         return $this->CreateChangesetBodyForBinding($binding, true);
     }
@@ -1250,7 +1267,7 @@ class SaveResult {
         $usePostTuneling = $this->_context->UsePostTunneling;
         $this->_context->UsePostTunneling = true;
         $mediaResourceRequest = $this->CreateMediaResourceRequest($editMediaResourceUri,
-                                                                  HttpVerb::PUT);
+                HttpVerb::PUT);
         $this->_context->UsePostTunneling = $usePostTuneling;
         $this->SetupMediaResourceRequest($mediaResourceRequest, $resourceBox);
         //TODO: Add E-Tag
@@ -1278,7 +1295,7 @@ class SaveResult {
         }
 
         $mediaResourceRequest = $this->CreateMediaResourceRequest($resourceBox->GetResourceUri($this->_context->GetBaseUriWithSlash()),
-                                                                  HttpVerb::POST);
+                HttpVerb::POST);
         $this->SetupMediaResourceRequest($mediaResourceRequest, $resourceBox);
         $resourceBox->State = EntityStates::Modified;
         return $mediaResourceRequest;
@@ -1294,10 +1311,10 @@ class SaveResult {
      */
     protected function CreateMediaResourceRequest($requestUri, $method) {
         $mediaResourceRequest = $this->_context->CreateRequest($requestUri,
-                                                                $method,
-                                                                false,
-                                                                '*/*',
-                                                                Resource::DataServiceVersion_1);
+                $method,
+                false,
+                '*/*',
+                Resource::DataServiceVersion_1);
         $mediaResourceRequest->ApplyHeaders(array('Content-Type' => '*/*'));
         return $mediaResourceRequest;
     }
@@ -1311,27 +1328,27 @@ class SaveResult {
      * @param ResourceBox $resourcBox
      */
     protected function SetupMediaResourceRequest(&$mediaResourceRequest,
-                                                 $resourcBox) {
+            $resourcBox) {
         $this->_mediaResourceRequestStream = $resourcBox->SaveStream->getStream();
         $mediaResourceRequest->ApplyHeaders($resourcBox->SaveStream->getArgs()->getHeaders());
     }
 
-     /**
-      * To create the Uri to be used for a binding operation (AddLink, SetLink
-      * or DeleteLink). For example if both Customer (with id 'ALKFI')and
-      * Order (1234)exists in OData service and in context, then Uri will be:
-      * _http://dataservice/Customers('ALKFI')/$links/Orders(1234)
-      * if only Customer exists in the data service and context and Order is just
-      * added in the context then Uri will be:
-      * _http://dataservice/Customers('ALKFI')/$links/Orders
-      *
-      * @param ResourceBox $sourceResourceBox
-      * @param RelatedEnd $binding
-      * @return Uri
-      */
+    /**
+     * To create the Uri to be used for a binding operation (AddLink, SetLink
+     * or DeleteLink). For example if both Customer (with id 'ALKFI')and
+     * Order (1234)exists in OData service and in context, then Uri will be:
+     * _http://dataservice/Customers('ALKFI')/$links/Orders(1234)
+     * if only Customer exists in the data service and context and Order is just
+     * added in the context then Uri will be:
+     * _http://dataservice/Customers('ALKFI')/$links/Orders
+     *
+     * @param ResourceBox $sourceResourceBox
+     * @param RelatedEnd $binding
+     * @return Uri
+     */
     protected function CreateRequestUri($sourceResourceBox, $binding) {
         return Utility::CreateUri($sourceResourceBox->GetResourceUri($this->_context->GetBaseUriWithSlash()),
-                              $this->CreateRequestRelativeUri($binding));
+                $this->CreateRequestRelativeUri($binding));
     }
 
     /**
@@ -1350,7 +1367,7 @@ class SaveResult {
      */
     protected function UpdateChangeOrderIDToHttpStatus($httpCode) {
         if(!($this->_processingMediaLinkEntry &&
-             $this->_processingMediaLinkEntryPut)) {
+                $this->_processingMediaLinkEntryPut)) {
             $resourceBox = $this->_changedEntries[$this->_entryIndex];
             $changeOrder = $resourceBox->ChangeOrder;
             if( array_key_exists($changeOrder, $this->_changeOrderIDToHttpStatus)) {
@@ -1371,8 +1388,8 @@ class SaveResult {
      * @param HttpResponse $httpResponse
      */
     protected function HandleOperationResponse($httpResponse) {
-         $resourceBox = $this->_changedEntries[$this->_entryIndex];
-         if ($resourceBox->IsResource()) {
+        $resourceBox = $this->_changedEntries[$this->_entryIndex];
+        if ($resourceBox->IsResource()) {
             $headers = $httpResponse->getHeaders();
             //Handle the POST Operation Response.
             //SDK will fire POST operation in three cases
@@ -1385,28 +1402,28 @@ class SaveResult {
             //      $this->_processingMediaLinkEntry) &&
             //     !$this->_processingMediaLinkEntryPut)]
             if (($resourceBox->State == EntityStates::Added) ||
-                ((($resourceBox->State == EntityStates::Modified) &&
-                  $this->_processingMediaLinkEntry) &&
-                 !$this->_processingMediaLinkEntryPut)) {
+                    ((($resourceBox->State == EntityStates::Modified) &&
+                            $this->_processingMediaLinkEntry) &&
+                            !$this->_processingMediaLinkEntryPut)) {
                 $resourceBox->EntityETag = AtomParser::GetEntityEtag($httpResponse->getBody());;
                 $location = isset($headers[HttpRequestHeader::Location])?
-                                  $headers[HttpRequestHeader::Location] :
-                                  null;
+                $headers[HttpRequestHeader::Location] :
+                null;
                 if ($httpResponse->isSuccessful()) {
                     if ($location == null) {
                         throw new ODataServiceException(Resource::NoLocationHeader,
-                                                        '',
-                                                        array(),
-                                                        null);
+                                '',
+                                array(),
+                                null);
                     }
                     $this->_context->AttachLocation($resourceBox->getResource(),
-                                                    $location);
+                            $location);
 
                     if($resourceBox->State == EntityStates::Added) {
                         $atomEntry = null;
                         AtomParser::PopulateObject($httpResponse->getBody(),
-                                                    $resourceBox->getResource(),
-                                                    $uri, $atomEntry);
+                        $resourceBox->getResource(),
+                        $uri, $atomEntry);
                     } else {
                         //After the POST operation for a media, state of corrosponding entity will be
                         //updated to Modified [earlier it will be Added] in CheckAndProcessMediaEntryPost
@@ -1414,14 +1431,14 @@ class SaveResult {
                         //MERGE operation, the function CreateChangeSetBodyForResource will throw error
                         //if any of the Key field is null. So update the Key fields.
                         AtomParser::PopulateMediaEntryKeyFields($httpResponse->getBody(),
-                                                    $resourceBox->getResource());
+                        $resourceBox->getResource());
 
                     }
                 }
             }
 
             if ($this->_processingMediaLinkEntry &&
-                !$httpResponse->isSuccessful()) {
+                    !$httpResponse->isSuccessful()) {
                 $this->_processingMediaLinkEntry = false;
                 if ($this->_processingMediaLinkEntryPut) {
                     $resourceBox->State = EntityStates::Added;
@@ -1453,8 +1470,8 @@ class SaveResult {
             if($entry->State != EntityStates::Unchanged) {
                 $changeOrder = $entry->ChangeOrder;
                 $httpCode = isset($this->_changeOrderIDToHttpStatus[$changeOrder]) ?
-                                $this->_changeOrderIDToHttpStatus[$changeOrder] :
-                                null;
+                $this->_changeOrderIDToHttpStatus[$changeOrder] :
+                null;
                 if(!empty($httpCode) && Utility::HttpSuccessCode($httpCode)) {
                     if($entry->State == EntityStates::Deleted) {
                         if($entry->IsResource()) {
@@ -1468,7 +1485,7 @@ class SaveResult {
                     }
 
                     if($entry->State == EntityStates::Modified ||
-                       $entry->State == EntityStates::Added) {
+                            $entry->State == EntityStates::Added) {
                         $entry->State = EntityStates::Unchanged;
                     }
                 }
@@ -1476,18 +1493,18 @@ class SaveResult {
         }
     }
 
-     /**
-      * Retrive http exception from HttpResponse object.
-      *
-      * @param HttpResponse $httpResponse
-      * @return string
-      */
+    /**
+     * Retrive http exception from HttpResponse object.
+     *
+     * @param HttpResponse $httpResponse
+     * @return string
+     */
     protected function getHttpException($httpResponse) {
         $exception = '';
         $headers = $httpResponse->getHeaders();
         if(isset($headers['Content-type'])) {
             if(strpos(strtolower($headers['Content-type']),
-               strtolower(Resource::Content_Type_ATOM)) !== FALSE) {
+                    strtolower(Resource::Content_Type_ATOM)) !== FALSE) {
                 $exception = $httpResponse->getMessage();
             } else {
                 $exception = $httpResponse->getBody();
@@ -1499,36 +1516,36 @@ class SaveResult {
         return $exception;
     }
 
-     /**
-      * To pad the nchar properties with spaces at the right end if its size is
-      * less than the maximum size defined for the property.
-      *
-      * @param ClientType $type
-      * @param Object $object
-      */
+    /**
+     * To pad the nchar properties with spaces at the right end if its size is
+     * less than the maximum size defined for the property.
+     *
+     * @param ClientType $type
+     * @param Object $object
+     */
     protected function HandleNCharProperties($type, $object) {
         $properties = $type->getRawProperties();
         foreach($properties as $property) {
             $attributes = $property->getAttributes();
 
             if((isset($attributes['EdmType'])) &&
-               (isset($attributes['FixedLength'])) &&
-               ($attributes['EdmType'] == 'Edm.String') &&
-               ($attributes['FixedLength'] == 'true')) {
-               $refProperty = new ReflectionProperty($object, $property->getName());
-               $propertyValue = $refProperty->getValue($object);
-               if(is_null($propertyValue)) {
-                   continue;
-               }
+                    (isset($attributes['FixedLength'])) &&
+                    ($attributes['EdmType'] == 'Edm.String') &&
+                    ($attributes['FixedLength'] == 'true')) {
+                $refProperty = new ReflectionProperty($object, $property->getName());
+                $propertyValue = $refProperty->getValue($object);
+                if(is_null($propertyValue)) {
+                    continue;
+                }
 
-               $currentLength = strlen($propertyValue);
-               $padLength = $attributes['MaxLength'] - $currentLength;
+                $currentLength = strlen($propertyValue);
+                $padLength = $attributes['MaxLength'] - $currentLength;
 
-               if($padLength > 0) {
-                   $propertyValue = str_pad($propertyValue, $currentLength + $padLength);
-                   $refProperty->setValue($object, $propertyValue);
-               }
-           }
+                if($padLength > 0) {
+                    $propertyValue = str_pad($propertyValue, $currentLength + $padLength);
+                    $refProperty->setValue($object, $propertyValue);
+                }
+            }
         }
     }
 }
