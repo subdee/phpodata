@@ -234,8 +234,7 @@ class Utility {
                           . ",";
             }
         }
-        $keyQuery[(strlen($keyQuery) - 1)] = ")";
-        $uri = $className . "(" . $keyQuery;
+        $uri = $className . "(" . $keyQuery . ")";
         return $uri;
     }
 
