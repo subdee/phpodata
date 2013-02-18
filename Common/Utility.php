@@ -221,16 +221,20 @@ class Utility {
             $keyQuery = $keyQuery . "=";
             $prop = new ReflectionProperty($object, $entityKey);
             $keyVal = $prop->getValue($object);
-
-            if (Utility::ContainAttribute($prop->getDocComment(), 'Edm.String') == FALSE) {
+var_dump($prop);
+            if (Utility::ContainAttribute($prop->getDocComment(), 'Edm.Int64') == TRUE) {
+            	$keyQuery = $keyQuery
+            		. str_replace(' ', "%20", $keyVal)
+            		. "L,";
+            } else if (Utility::ContainAttribute($prop->getDocComment(), 'Edm.String') == TRUE) {
                 $keyQuery = $keyQuery
+                          . "'"
                           . str_replace(' ', "%20", $keyVal)
+                          . "'"
                           . ",";
             } else {
-                $keyQuery = $keyQuery
-                          . "'"
+            	$keyQuery = $keyQuery
                           . str_replace(' ', "%20", $keyVal)
-                          . "'"
                           . ",";
             }
         }

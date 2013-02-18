@@ -167,7 +167,8 @@ class <xsl:value-of select="@Name"/>
 <xsl:for-each select="schema_1_0:Property | schema_1_1:Property | schema_1_2:Property">
 	/**
 	 * @Type:EntityProperty<xsl:if test="@Nullable = 'false'">
-	 * NotNullable</xsl:if>
+	 * @NotNullable</xsl:if><xsl:if test="@DefaultValue">
+	 * @DefaultValue:<xsl:value-of select="@DefaultValue"/></xsl:if>
 	 * @EdmType:<xsl:value-of select="@Type"/><xsl:if test="@Type = 'Edm.String'">
 	 * @MaxLength:<xsl:value-of select="@MaxLength"/>
 	 * @FixedLength:<xsl:value-of select="@FixedLength"/>
@@ -214,7 +215,7 @@ class <xsl:value-of select="@Name"/>
 		$this->_baseURI = $uri;
 <xsl:for-each select="schema_1_0:NavigationProperty | schema_1_1:NavigationProperty | schema_1_2:NavigationProperty">
 		$this->_entityMap['<xsl:value-of select="@Name"/>'] = '<xsl:value-of select="@ToRole"/>';</xsl:for-each>
-<xsl:apply-templates select="schema_1_0:Key | schema_1_1:Key"/>
+<xsl:apply-templates select="schema_1_0:Key | schema_1_1:Key | schema_1_2:Key"/>
 <xsl:for-each select="schema_1_0:NavigationProperty | schema_1_1:NavigationProperty | schema_1_2:NavigationProperty">
 		$this-><xsl:value-of select="@Name"/> = array();</xsl:for-each>
 	}
@@ -277,7 +278,8 @@ class <xsl:value-of select="@Name"/> {
 		<xsl:for-each select="schema_1_0:Property | schema_1_1:Property | schema_1_2:Property">
 	/**
 	 * @Type:EntityProperty<xsl:if test="@Nullable = 'false'">
-	 * NotNullable</xsl:if>
+	 * @NotNullable</xsl:if><xsl:if test="@DefaultValue">
+	 * @DefaultValue:<xsl:value-of select="@DefaultValue"/></xsl:if>
 	 * @EdmType:<xsl:value-of select="@Type"/><xsl:if test="@Type = 'Edm.String'">
 	 * @MaxLength:<xsl:value-of select="@MaxLength"/>
 	 * @FixedLength:<xsl:value-of select="@FixedLength"/>
