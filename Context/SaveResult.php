@@ -569,6 +569,39 @@ class SaveResult {
 		return $changesetBodyForResource;
 	}
 
+	protected function FormatPropertyValue($propertyValue, $edmType) {
+		switch ($edmType) {
+			case 'Edm.Binary':
+				return base64_encode($propertyValue);
+			case 'Edm.Boolean':
+				return $propertyValue === true ? 'true' : 'false';
+			case 'Edm.Decimal':
+			case 'Edm.Single':
+				return sprintf('%F',$propertyValue);
+				break;
+			case 'Edm.Double':
+				return sprintf('%E',$propertyValue);
+			case 'Edm.Byte':
+			case 'Edm.Int16':
+			case 'Edm.Int32':
+			case 'Edm.Int64':
+			case 'Edm.SByte':
+				return sprintf('%d',$propertyValue);
+			case 'Edm.String':
+				// wrap value in CDATA tag since strings may contain XML special characters
+				return "<![CDATA[" . $propertyValue . "]]>";
+			case 'Edm.DateTime':
+				if (strlen($propertyValue) > 0) {
+					return $propertyValue;
+				} else {
+					return null;
+				}
+			default:
+				var_dump($propertyValue);
+				return $propertyValue;
+		}
+	}
+
 	protected function CreateBodyForProperties($type, $object, &$body) {
 		$nonEpmProperties = $type->getRawNonEPMProperties(true);
 
@@ -595,51 +628,27 @@ class SaveResult {
 			$property = '';
 			// determine if the property is null and should be output accordingly
 			// for numeric types, utilize a numeric value
-			if ($propertyValue === NULL) {
+			if ($propertyValue === NULL || ($edmType == 'Edm.DateTime' && strlen($propertyValue) <= 0)) {
 				if(!$notNullable) {
 					$property = "<d:" . $propertyName . " m:null=\"true\" />";
 				} elseif (isset($propertyAttributes['DefaultValue']) && $propertyAttributes['DefaultValue'] !== null) {
 					$property = '<d:'.$propertyName.'>'. $propertyAttributes['DefaultValue'] .'</d:'.$propertyName.'>';
-				} elseif ($edmType == 'Edm.Decimal') {
-					$property = '<d:'.$propertyName.'>0.0M</d:'.$propertyName.'>';
-				} elseif ($edmType == 'Edm.Double') {
-					$property = '<d:'.$propertyName.'>0.0</d:'.$propertyName.'>';
-				} elseif ($edmType == 'Edm.Int') {
-					$property = '<d:'.$propertyName.'>0</d:'.$propertyName.'>';
-				} elseif ($edmType == 'Edm.Single') {
-					$property = '<d:'.$propertyName.'>0.0f</d:'.$propertyName.'>';
-				} elseif ($edmType == 'Edm.Boolean') {
-					$property = '<d:'.$propertyName.'>false</d:'.$propertyName.'>';
-				} else {
-					/**
-					 * The following comment is from the original authors and remains until
-					 * further investigation can be made regarding proper behavior of
-					 * non-nullable types.
-					 */
-					//ex: In the case of OrderID, the ID is a autonumber, so user will not
-					//specify this value, since its a nonnullable value we cant set null=true
-					//property, in this case the correct property node should be
-					//<d:OrderID">0</d:OrderID">, but instead of this we can also achieve the
-					//same effect by not adding the property itself in xml
-					continue;
+				} else
+				{
+					$property = '<d:'.$propertyName.'>' . $this->FormatPropertyValue($propertyValue, $edmType) . '</d:'.$propertyName.'>';
 				}
 			} else {
 				$attributes = $nonEpmProperty->getAttributes();
 				$edmTypeString = '';
-				if ($edmType) {
-					if ($edmType == 'Edm.String') {
-						// wrap value in CDATA tag since strings may contain XML special characters
-						$propertyValue = "<![CDATA[" . $propertyValue . "]]>";
-					} else if ($edmType == 'Edm.Boolean') {
-						$propertyValue = $propertyValue ? 'true' : 'false';
-					}
-
+				if (strlen($edmType) > 0) {
 					if ($edmType != 'Edm.String') {
 						// Edm.String is default type. We can ignore it.
 						$edmTypeString = ' m:type="' . $edmType . '"';
 					}
+						
+					$propertyValue = $this->FormatPropertyValue($propertyValue, $edmType);
 				}
-					
+
 				$property = '<d:' . $propertyName . $edmTypeString . '>' .
 						$propertyValue .
 						'</d:' . $propertyName . '>';
@@ -647,7 +656,7 @@ class SaveResult {
 
 			Utility::WriteLine($body, $property);
 		}
-			
+
 	}
 
 	/**
@@ -812,10 +821,10 @@ class SaveResult {
 			$targetResourceBox = null;
 			$this->_context->ObjectToResource->TryGetValue($binding->GetTargetResource(),
 					$targetResourceBox);
-				
+
 			if (strlen($targetResourceBox->GetResourceUri("")) > 0) {
 				$editLinkUri = $targetResourceBox->GetResourceUri("");
-			} else {		
+			} else {
 				$editLinkUri = $this->GenerateEditLinkUri(
 						$this->_context->GetBaseUriWithSlash(),
 						$targetResourceBox->GetResource(),

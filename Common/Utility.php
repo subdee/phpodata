@@ -237,11 +237,11 @@ class Utility {
 		} else {
 			$uri = $className . "(";
 			$firstElement = false;
-			
+				
 			foreach ($keyQueries as $key => $value) {
-				$uri .= $key . "=" . $value;				
+				$uri .= $key . "=" . $value;
 			}
-			
+				
 			return $uri . ")";
 		}
 	}
@@ -365,8 +365,14 @@ class Utility {
 				$type = "Edm.Decimal";
 			} else if(Utility::ContainAttribute($property->getDocComment(), 'Edm.Int16')) {
 				$type = "Edm.Int16";
+			} else if(Utility::ContainAttribute($property->getDocComment(), 'Edm.Int32')) {
+				$type = "Edm.Int32";
+			} else if(Utility::ContainAttribute($property->getDocComment(), 'Edm.Int64')) {
+				$type = "Edm.Int64";
 			} else if(Utility::ContainAttribute($property->getDocComment(), 'Edm.Boolean')) {
 				$type = "Edm.Boolean";
+			} else if(Utility::ContainAttribute($property->getDocComment(), 'Edm.Single')) {
+				$type = "Edm.Single";
 			} else if(Utility::ContainAttribute($property->getDocComment(), 'Edm.Decimal')) {
 				$type = "Edm.Decimal";
 			}
@@ -422,7 +428,7 @@ class Utility {
 			$i = strpos($attribute, "@");
 			if ($i !== FALSE) {
 				$attributeValue = substr($attribute, $i + 1);
-				 
+					
 				$attributeSplit = explode(':', $attributeValue, 2);
 				$key = trim($attributeSplit[0]);
 				if (count($attributeSplit) > 1) {
